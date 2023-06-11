@@ -1,6 +1,7 @@
 import tkinter as tk
 import mysql.connector
 import pandas as pd
+from PIL import ImageTk, Image
 # Thư viện để tạo ra một cửa sổ thông báo
 from tkinter import END, messagebox
 # thư viện để kiểm tra Mật Khẩu
@@ -24,6 +25,8 @@ from openpyxl import load_workbook
 class LoginWindow:
     def __init__(self):
         self.window = tk.Tk()
+        # đổi màu cửa sổ
+        self.window.configure(bg="light blue")
          #lấy vị trí màn hình
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
@@ -34,39 +37,58 @@ class LoginWindow:
         self.window.geometry(f"500x300+{x}+{y}")
         self.window.title("Đăng ký và Đăng nhập")
 
+        # Tạo frame con bên trái để hiển thị bảng dữ liệu phim và thanh cuộn
+        left_frame = tk.Frame(self.window,width=10,height=200)
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Giới hạn kích thước của left_frame
+        left_frame.pack_propagate(False)
+        self.image = ImageTk.PhotoImage(Image.open("hinh.png"))
+        label = tk.Label(left_frame, image=self.image)   
+        label.pack(fill=tk.BOTH, expand=True)
+
+        # Tạo frame con bên phải để hiển thị thông tin phim và các tùy chọn khác
+        right_frame = tk.Frame(self.window)
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        right_frame.pack_propagate(False)
         #hiển thị mật khẩu
         self.show_password = tk.BooleanVar()
         self.show_password.set(False)
 
-        self.user_type = tk.StringVar()
-        self.user_type.set("employee")  # Giá trị mặc định là "Nhân viên"
-        self.radio_manager = tk.Radiobutton(self.window, text="Quản lý", value="manager", variable=self.user_type)
-        self.radio_manager.pack(side=tk.LEFT)
-        self.radio_employee = tk.Radiobutton(self.window, text="Nhân viên", value="employee", variable=self.user_type)
-        self.radio_employee.pack(side=tk.LEFT)
-
-        self.label_username = tk.Label(self.window, text="Tên đăng nhập:")
+        self.user_type = tk.IntVar()
+        self.label_username = tk.Label(right_frame, text="Tên đăng nhập:",font=('Arial', 14))
         self.label_username.pack()
-        self.entry_username = tk.Entry(self.window)
+        self.entry_username = tk.Entry(right_frame)
         self.entry_username.pack()
 
-        self.label_password = tk.Label(self.window, text="Mật khẩu:")
+        self.label_password = tk.Label(right_frame, text="Mật khẩu:",font=('Arial', 14))
         self.label_password.pack()
-        self.entry_password = tk.Entry(self.window, show="*")
+        self.entry_password = tk.Entry(right_frame, show="*")
         self.entry_password.pack()
 
-        self.label_error = tk.Label(self.window, text="")
+        self.label_error = tk.Label(right_frame, text="")
         self.label_error.pack()
-
-        self.button_register = tk.Button(self.window, text="Đăng ký", command=self.open_register_window)
+        self.button_login = tk.Button(right_frame, text="Đăng nhập",font=('Arial', 14),bg="yellow",width=10, height=1, command=self.login)
+        self.button_login.pack()
+        self.button_register = tk.Button(right_frame, text="Đăng ký",font=('Arial', 14),bg="blue",width=10, height=1, command=self.open_register_window)
         self.button_register.pack()
 
-        self.button_login = tk.Button(self.window, text="Đăng nhập", command=self.login)
-        self.button_login.pack()
+        #nhan enter
+        self.entry_password.bind('<Return>',lambda dummy = 0:self.login())
 
-        self.checkbutton_show_password = tk.Checkbutton(self.window, text="Hiển thị mật khẩu",variable=self.show_password,command=self.toggle_password_visibility)
+        self.checkbutton_show_password = tk.Checkbutton(right_frame, font=('Arial', 10),text="Hiển thị mật khẩu",variable=self.show_password,command=self.toggle_password_visibility)
         self.checkbutton_show_password.pack()
-
+        self.radio_manager = tk.Radiobutton(right_frame, text="Quản lý",font=('Arial', 12), value=1, variable=self.user_type,command=self.chucvu)
+        self.radio_manager.pack()
+        self.radio_employee = tk.Radiobutton(right_frame, text="Nhân viên",font=('Arial', 12), value=2, variable=self.user_type,command=self.chucvu)
+        self.radio_employee.pack()
+    def chucvu(self):
+        try:
+            if self.user_type.get() ==1:
+                self.user=1
+            elif self.user_type.get() ==2:
+                self.user=2
+        except:
+            return
     # Hàm xử lý khi nút đăng kí được nhấn
     def open_register_window(self):
         register_window = RegisterWindow(self.window)
@@ -78,7 +100,7 @@ class LoginWindow:
 
         # Kiểm tra xem người dùng đã nhập đủ thông tin hay chưa
         if not self.username or not password:
-            self.label_error.configure(text='ERROR: Vui lòng nhập đầy đủ thông tin!', fg="red")
+            self.label_error.configure(text='ERROR: Vui lòng nhập đầy đủ thông tin!',font=('Arial', 12), fg="red")
             return
 
         # Kết nối tới cơ sở dữ liệu MySQL
@@ -109,7 +131,7 @@ class LoginWindow:
         # Kiểm tra kết quả truy vấn
         # Không đăng nhập được
         if len(result) == 0:
-            self.label_error.configure(text='ERROR: Tên đăng nhập hoặc mật khẩu không đúng!', fg="red")
+            self.label_error.configure(text='ERROR: Tên đăng nhập hoặc mật khẩu không đúng!',font=('Arial', 12), fg="red")
             self.entry_username.delete(0, END)
             self.entry_password.delete(0, END)
         else:
@@ -120,7 +142,7 @@ class LoginWindow:
 
     # Hàm để mở cửa sổ chính
     def open_main_window(self):
-        main_window = MainWindow(self.window,self.username)
+        main_window = MainWindow(self.window,self.username,self.user)
 
     # Hàm để khởi tạo cửa số GUI
     def run(self):
@@ -151,17 +173,17 @@ class RegisterWindow:
         self.show_password = tk.BooleanVar()
         self.show_password.set(False)
 
-        self.label_username = tk.Label(self.register_window, text="Tên đăng nhập:")
+        self.label_username = tk.Label(self.register_window, font=('Arial', 12),text="Tên đăng nhập:")
         self.label_username.pack()
         self.entry_username = tk.Entry(self.register_window)
         self.entry_username.pack()
 
-        self.label_password = tk.Label(self.register_window, text="Mật khẩu:")
+        self.label_password = tk.Label(self.register_window, font=('Arial', 12),text="Mật khẩu:")
         self.label_password.pack()
         self.entry_password = tk.Entry(self.register_window, show="*")
         self.entry_password.pack()
 
-        self.label_confirm_password = tk.Label(self.register_window, text="Nhập lại mật khẩu:")
+        self.label_confirm_password = tk.Label(self.register_window, font=('Arial', 12),text="Nhập lại mật khẩu:")
         self.label_confirm_password.pack()
         self.entry_confirm_password = tk.Entry(self.register_window, show="*")
         self.entry_confirm_password.pack()
@@ -169,10 +191,10 @@ class RegisterWindow:
         self.label_error = tk.Label(self.register_window, text="")
         self.label_error.pack()
 
-        self.button_register = tk.Button(self.register_window, text="Đăng ký", command=self.register)
+        self.button_register = tk.Button(self.register_window, text="Đăng ký",font=('Arial', 12), command=self.register)
         self.button_register.pack()
 
-        self.checkbutton_show_password = tk.Checkbutton(self.register_window, text="Hiển thị mật khẩu",variable=self.show_password,command=self.toggle_password_visibility)
+        self.checkbutton_show_password = tk.Checkbutton(self.register_window, text="Hiển thị mật khẩu",font=('Arial', 10),variable=self.show_password,command=self.toggle_password_visibility)
         self.checkbutton_show_password.pack()
     # Hàm hiện mật khẩu
     def toggle_password_visibility(self):
@@ -190,25 +212,25 @@ class RegisterWindow:
 
         #kiểm tra xem người dùng nhập đủ thông tin chưa
         if not username or not password or not confirm_password:
-            self.label_error.configure(text='ERROR: Vui lòng nhập đầy đủ thông tin!', fg="red")
+            self.label_error.configure(text='ERROR: Vui lòng nhập đầy đủ thông tin!',font=('Arial', 12), fg="red")
             return
 
         # Kiểm tra nhập lại mật khẩu khớp không
         if password != confirm_password:
-            self.label_error.configure(text='ERROR: Mật khẩu không khớp!', fg="red")
+            self.label_error.configure(text='ERROR: Mật khẩu không khớp!',font=('Arial', 12), fg="red")
             self.entry_username.delete(0, END)
             self.entry_password.delete(0, END)
             self.entry_confirm_password.delete(0, END)
         else:
             #Kiểm tra mật khẩu hợp lệ
             if not self.validate_password(password):
-                self.label_error.configure(text='ERROR: Mật khẩu không hợp lệ!', fg="red")
+                self.label_error.configure(text='ERROR: Mật khẩu không hợp lệ!',font=('Arial', 12), fg="red")
                 self.entry_username.delete(0, END)
                 self.entry_password.delete(0, END)
                 self.entry_confirm_password.delete(0, END)
             # Kiểm tra tên đăng nhập tồn tại
             if self.check_username_exists(username):
-                self.label_error.configure(text='ERROR: Tên đăng nhập đã tồn tại!', fg="red")
+                self.label_error.configure(text='ERROR: Tên đăng nhập đã tồn tại!',font=('Arial', 12), fg="red")
                 self.entry_username.delete(0, END)
                 self.entry_password.delete(0, END)
                 self.entry_confirm_password.delete(0, END)
@@ -298,9 +320,10 @@ class RegisterWindow:
 
 # Class của cửa sổ chính
 class MainWindow:
-    def __init__(self, parent, username):
+    def __init__(self, parent, username,user):
         self.Main_window = tk.Toplevel(parent)
         self.username=username
+        self.user=user
         # Lấy vị trí màn hình
         screen_width = self.Main_window.winfo_screenwidth()
         screen_height = self.Main_window.winfo_screenheight()
@@ -310,42 +333,63 @@ class MainWindow:
         y = int((screen_height - 800) / 2)
         self.Main_window.geometry(f"1000x500+{x}+{y}")
         self.Main_window.title("KHA Cinema") 
-
+        self.Main_window.configure(bg="gray")
         # Tạo frame chứa nội dung thay đổi
         self.content_frame = tk.Frame(self.Main_window)
-        self.content_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.content_frame.pack(side=tk.RIGHT, fill=tk.BOTH,expand=True)
+        self.image = ImageTk.PhotoImage(Image.open("3-min-1.jpg"))
+        label = tk.Label(self.content_frame, image=self.image)   
+        label.pack(fill=tk.BOTH, expand=True)
 
         # Hiển thị thông tin tài khoản
         self.account_frame = tk.Frame(self.Main_window)
         self.account_frame.pack(side=tk.TOP, fill=tk.X)
 
         # Hiển thị tên người đăng nhập
-        self.label_username = tk.Label(self.Main_window, text="Tên người đăng nhập: " + username)
+        self.label_username = tk.Label(self.Main_window,font=('Arial', 12), text="Người đăng nhập: " + username)
         self.label_username.pack()
-
-        label_role = tk.Label(self.account_frame, text="Chức vụ: Quản lý")
-        label_role.pack(side=tk.RIGHT, padx=5, pady=5)   
+        self.label_role = tk.Label(self.account_frame,font=('Arial', 12), text="Chức vụ: Quản Lý")
+        self.label_role.pack(side=tk.RIGHT, padx=5, pady=5)
+        
 
         # Tạo khung bên trái
         self.side_frame = tk.Frame(self.Main_window)
         self.side_frame.pack(side=tk.LEFT, fill=tk.Y)
-
+        self.side_frame.configure(bg="khaki")
         # Thêm các tùy chọn
-        button_order = tk.Button(self.side_frame, text="Doanh thu", command=self.open_order_frame)
+        button_order = tk.Button(self.side_frame, text="Doanh thu",font=('Arial', 12),bg='green', command=self.open_order_frame)
         button_order.pack(fill=tk.X, padx=10, pady=10)
 
-        button_add_film = tk.Button(self.side_frame, text="Thêm Phim", command=self.show_add_film_frame)
+        button_add_film = tk.Button(self.side_frame, text="Thêm Phim",font=('Arial', 12),bg="orange", command=self.show_add_film_frame)
         button_add_film.pack(fill=tk.X, padx=10, pady=10)
 
-        button_price = tk.Button(self.side_frame, text="Đơn giá", command=self.show_price_window)
+        button_price = tk.Button(self.side_frame, text="Quản Lý Giá",font=('Arial', 12),bg="pink", command=self.show_price_window)
         button_price.pack(fill=tk.X, padx=10, pady=10)
 
-        button_account = tk.Button(self.side_frame, text="Xem tài khoản", command=self.show_account_window)
+        button_ticket = tk.Button(self.side_frame, text="Ticket",font=('Arial', 12),bg="blue", command=self.show_ticket_window)
+        button_ticket.pack(fill=tk.X, padx=10, pady=10)
+
+        button_Person = tk.Button(self.side_frame, text="Nhân sự",font=('Arial', 12),bg="yellow", command=self.show_Person_window)
+        button_Person.pack(fill=tk.X, padx=10, pady=10)
+
+        button_account = tk.Button(self.side_frame, text="Xem tài khoản",font=('Arial', 12), command=self.show_account_window)
         button_account.pack(fill=tk.X, padx=10, pady=10)
 
-        button_exit = tk.Button(self.side_frame, text="Thoát", command=self.Main_window.quit)
+        self.image = ImageTk.PhotoImage(Image.open("thoat.png"))
+        button_exit = tk.Button(self.side_frame,image=self.image, command=self.Main_window.quit)
         button_exit.pack(fill=tk.X, padx=10, pady=10)
 
+        if self.user ==1:
+            self.label_role.config( text="Chức vụ: Quản Lý")
+        
+        elif self.user ==2:
+            self.label_role.config( text="Chức vụ: Nhân Viên")
+            button_price.config(state=tk.DISABLED)
+            button_order.config(state=tk.DISABLED)
+            button_add_film.config(state=tk.DISABLED)
+            button_Person.config(state=tk.DISABLED)
+            button_account.config(state=tk.DISABLED)
+            
     def open_order_frame(self):
         # Hiển thị frame Đơn hàng
         self.clear_content_frame()
@@ -365,6 +409,19 @@ class MainWindow:
 
         # Thêm nội dung mới vào frame
         price_film_frame=PriceFrame(self)
+    
+    def show_ticket_window(self):
+        # Xóa nội dung hiện tại của frame
+        self.clear_content_frame()
+
+        # Thêm nội dung mới vào frame
+        ticket_frame=TicketFrame(self)
+    def show_Person_window(self):
+        # Xóa nội dung hiện tại của frame
+        self.clear_content_frame()
+
+        # Thêm nội dung mới vào frame
+        person_frame=PersonsFrame(self)
 
     def show_account_window(self):
         # Xóa nội dung hiện tại của frame
@@ -392,7 +449,7 @@ class OrderFrame:
         left_frame.pack_propagate(False)    
 
         # Tạo ô tìm kiếm
-        search_button = tk.Button(left_frame, text="Tìm kiếm", command=self.search_movies)
+        search_button = tk.Button(left_frame, font=('Arial', 12),text="Tìm kiếm",bg='khaki', command=self.search_movies)
         search_button.pack()
 
         self.search_entry = tk.Entry(left_frame)
@@ -411,6 +468,12 @@ class OrderFrame:
         # Thêm các cột và dữ liệu vào bảng dữ liệu phim
         self.movie_table['columns'] = ('STT', 'ReleaseDate', 'MovieTitle', 'Price','Order_number','Revenue')
 
+        self.movie_table.column('STT', width=90)
+        self.movie_table.column('ReleaseDate', width=100)
+        self.movie_table.column('MovieTitle', width=100)
+        self.movie_table.column('Price', width=90)
+        self.movie_table.column('Order_number', width=100)
+        self.movie_table.column('Revenue', width=90)
         self.movie_table.heading('STT', text='STT')
         self.movie_table.heading('ReleaseDate', text='ReleaseDate')
         self.movie_table.heading('MovieTitle', text='MovieTitle')
@@ -444,23 +507,25 @@ class OrderFrame:
         # Giới hạn kích thước của left_frame
         right_frame.pack_propagate(False) 
         # Thêm nội dung mới vào frame bên phải
-        label = tk.Label(right_frame, text="Thông tin phim")
+        label = tk.Label(right_frame,font=('Arial', 12), text="Thông tin phim")
         label.pack()
 
         # Tạo các label để hiển thị thông tin phim
-        self.label_stt = tk.Label(right_frame, text="STT:",anchor="w")
+        self.label_stt = tk.Label(right_frame, font=('Arial', 10),text="STT:",anchor="w")
         self.label_stt.pack(anchor="w")
-        self.label_release_date = tk.Label(right_frame, text="Ngày phát hành:",anchor="w")
+        self.label_release_date = tk.Label(right_frame, font=('Arial', 10),text="Ngày phát hành:",anchor="w")
         self.label_release_date.pack(anchor="w")
-        self.label_movie_title = tk.Label(right_frame, text="Tên phim:",anchor="w")
+        self.label_movie_title = tk.Label(right_frame, font=('Arial', 10),text="Tên phim:",anchor="w")
         self.label_movie_title.pack(anchor="w")
-        self.label_price = tk.Label(right_frame, text="Đơn giá:",anchor="w")
+        self.label_price = tk.Label(right_frame, font=('Arial', 10),text="Đơn giá:",anchor="w")
         self.label_price.pack(anchor="w")
-        self.label_order_number = tk.Label(right_frame, text="Số lượng đặt:",anchor="w")
+        self.label_order_number = tk.Label(right_frame,font=('Arial', 10), text="Số lượng đặt:",anchor="w")
         self.label_order_number.pack(anchor="w")
-        self.label_revenue = tk.Label(right_frame, text="Doanh thu:",anchor="w")
+        self.label_revenue = tk.Label(right_frame,font=('Arial', 10), text="Doanh thu:",anchor="w")
         self.label_revenue.pack(anchor="w")
-
+        self.Label_hinh=tk.Label(right_frame)
+        self.Label_hinh.grid(row=6, column=0, padx=10, pady=10, sticky="nsew")
+        #self.Label_hinh.config(width=200, height=300)
     def load_movies(self):
         # Kết nối tới cơ sở dữ liệu MySQL
         cnx = mysql.connector.connect(
@@ -512,35 +577,104 @@ class OrderFrame:
         # Gắn sự kiện chọn dòng trong bảng dữ liệu phim
         self.movie_table.bind("<<TreeviewSelect>>", self.update_movie_info)
     def update_movie_info(self, event):
-        # Xóa nội dung hiện tại của phần frame "Thông tin phim"
-        self.clear_movie_info()
+        try:
+            # Xóa nội dung hiện tại của phần frame "Thông tin phim"
+            self.clear_movie_info()
 
-        # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
-        selected_item = self.movie_table.focus()
-        movie_info = self.movie_table.item(selected_item, 'values')
+            # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
+            selected_item = self.movie_table.focus()
+            movie_info = self.movie_table.item(selected_item, 'values')
 
-        # Hiển thị thông tin phim trong frame "Thông tin phim"
-        self.label_stt.config(text="STT: " + str(movie_info[0]))
-        self.label_release_date.config(text="Ngày phát hành: " + str(movie_info[1]))
-        self.label_movie_title.config(text="Tên phim: " + str(movie_info[2]))
-        self.label_price.config(text="Đơn giá: " + str(movie_info[3]))
-        self.label_order_number.config(text="Số lượng đặt: " + str(movie_info[4]))
-        self.label_revenue.config(text="Doanh thu: " + str(movie_info[5]))
+            # Hiển thị hình ảnh và các label thông tin trong frame "Thông tin phim"
+            self.label_stt.config(text="STT: " + str(movie_info[0]))
+            self.label_release_date.config(text="Ngày phát hành: " + str(movie_info[1]))
+            self.label_movie_title.config(text="Tên phim: " + str(movie_info[2]))
+            self.label_price.config(text="Đơn giá: " + str(movie_info[3]))
+            self.label_order_number.config(text="Số lượng đặt: " + str(movie_info[4]))
+            self.label_revenue.config(text="Doanh thu: " + str(movie_info[5]))
+
+            # Hiển thị hình ảnh và các label thông tin trong frame "Thông tin phim"
+            stt = int(movie_info[0])
+            image_path = f"image_{stt}.png"  # Đường dẫn tới hình ảnh tương ứng với STT
+            image = ImageTk.PhotoImage(Image.open(image_path))
+            self.Label_hinh.config(image=image)
+            self.Label_hinh.image = image  # Lưu tham chiếu đến hình ảnh để tránh lỗi hiển thị
+            self.Label_hinh.pack(side=tk.BOTTOM)  # Đặt hình ảnh dưới các label thông tin
+
+        except:
+            return
+        
 
     def clear_movie_info(self):
         # Xóa nội dung của các label trong phần frame "Thông tin phim"
-        self.label_stt.config(text="STT:")
-        self.label_release_date.config(text="Ngày phát hành:")
-        self.label_movie_title.config(text="Tên phim:")
-        self.label_price.config(text="Đơn giá:")
-        self.label_order_number.config(text="Số lượng đặt:")
-        self.label_revenue.config(text="Doanh thu:")
+        self.label_stt.config(font=('Arial', 12),text="STT:")
+        self.label_release_date.config(font=('Arial', 12),text="Ngày phát hành:")
+        self.label_movie_title.config(font=('Arial', 12),text="Tên phim:")
+        self.label_price.config(font=('Arial', 12),text="Đơn giá:")
+        self.label_order_number.config(font=('Arial', 12),text="Số lượng đặt:")
+        self.label_revenue.config(font=('Arial', 12),text="Doanh thu:")
 class AddFilmFrame:
     def __init__(self, parent):
         self.parent = parent
         # Tạo frame chứa nội dung Thêm phim
-        self.add_film_frame = tk.Frame(self.parent.content_frame)
+        self.add_film_frame = tk.Frame(self.parent.content_frame,width=400, height=800)
         self.add_film_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Giới hạn kích thước của left_frame
+        self.add_film_frame.pack_propagate(False)
+
+        # Tạo ô tìm kiếm
+        search_button = tk.Button(self.add_film_frame,font=('Arial', 12), text="Tìm kiếm",bg='khaki', command=self.search_movies)
+        search_button.pack()
+
+        self.search_entry = tk.Entry(self.add_film_frame)
+        self.search_entry.pack()
+
+        # Tạo thanh cuộn
+        scrollbar = tk.Scrollbar(self.add_film_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Tạo thanh cuộn ngang
+        xscrollbar = tk.Scrollbar(self.add_film_frame, orient=tk.HORIZONTAL)
+        xscrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # Tạo bảng dữ liệu phim
+        self.movie_table = ttk.Treeview(self.add_film_frame, yscrollcommand=scrollbar.set)
+        # Thêm các cột và dữ liệu vào bảng dữ liệu phim
+        self.movie_table['columns'] = ('STT', 'ReleaseDate', 'MovieTitle', 'Price','Order_number','Revenue')
+
+        self.movie_table.column('STT', width=90)
+        self.movie_table.column('ReleaseDate', width=100)
+        self.movie_table.column('MovieTitle', width=100)
+        self.movie_table.column('Price', width=100)
+        self.movie_table.column('Order_number', width=100)
+        self.movie_table.column('Revenue', width=90)
+        self.movie_table.heading('STT', text='STT')
+        self.movie_table.heading('ReleaseDate', text='ReleaseDate')
+        self.movie_table.heading('MovieTitle', text='MovieTitle')
+        self.movie_table.heading('Price', text='Price')
+        self.movie_table.heading('Order_number', text='Order_number')
+        self.movie_table.heading('Revenue', text='Revenue')
+
+        # Tìm index của cột "MovieTitle"
+        column_index = self.movie_table['columns'].index('MovieTitle')
+        # Tính toán vị trí cuộn ngang của thanh cuộn
+        scroll_position = column_index / len(self.movie_table['columns'])
+
+        # Di chuyển thanh cuộn ngang đến vị trí mong muốn
+        self.movie_table.xview_moveto(scroll_position)
+
+        # Kết nối thanh cuộn với bảng dữ liệu phim
+        scrollbar.config(command=self.movie_table.yview)
+        # Kết nối thanh cuộn ngang với bảng dữ liệu phim
+        self.movie_table.configure(xscrollcommand=xscrollbar.set)
+        xscrollbar.config(command=self.movie_table.xview)
+
+        # Hiển thị bảng dữ liệu phim
+        self.movie_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Gọi hàm để hiển thị dữ liệu phim từ MySQL
+        self.load_movies()
+
         # Tạo frame chứa nội dung Xóa phim
         self.delete_film_frame = tk.Frame(self.parent.content_frame)
         self.delete_film_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -552,36 +686,84 @@ class AddFilmFrame:
 
         # Bố trí các label và entry trong frame Thêm phim
         for i, label_text in enumerate(self.labels):
-            label = tk.Label(self.add_film_frame, text=label_text, anchor="w")
+            label = tk.Label(self.delete_film_frame, font=('Arial', 12),text=label_text, anchor="w")
             label.grid(row=i, column=0, padx=10, pady=5, sticky="w")
 
-            entry = tk.Entry(self.add_film_frame)
+            entry = tk.Entry(self.delete_film_frame)
             entry.grid(row=i, column=1, padx=10, pady=5, sticky="w")
 
             self.entries.append(entry)
 
         # Thêm nút Lưu để lưu thông tin phim
-        button_save = tk.Button(self.add_film_frame, text="Lưu", command=self.save_film)
+        button_save = tk.Button(self.delete_film_frame,font=('Arial', 12), text="Lưu",bg='Light green', command=self.save_film)
         button_save.grid(row=len(self.labels), columnspan=2, padx=10, pady=5)
 
         # Thêm label để hiển thị thông báo
-        self.label_message = tk.Label(self.add_film_frame, text="", fg="red")
-        self.label_message.grid(row=len(self.labels) + 1, columnspan=2, padx=10, pady=5)
+        self.label_message = tk.Label(self.delete_film_frame, text="", fg="red")
+        self.label_message.grid(row=len(self.labels) + 4, columnspan=2, padx=10, pady=5)
 
         # Tạo phần nhập liệu cho tên hoặc số thứ tự phim cần xóa trong frame Xóa phim
-        label_delete = tk.Label(self.delete_film_frame, text="Nhập tên hoặc số thứ tự phim cần xóa:")
-        label_delete.pack(padx=10, pady=5)
+        label_delete = tk.Label(self.delete_film_frame, font=('Arial', 12),text="Nhập tên hoặc số thứ tự phim cần xóa:")
+        label_delete.grid(row=len(self.labels) + 1, columnspan=2, padx=10, pady=5)
 
         self.entry_delete = tk.Entry(self.delete_film_frame)
-        self.entry_delete.pack(padx=10, pady=5)
+        self.entry_delete.grid(row=len(self.labels) + 2, columnspan=2, padx=10, pady=5)
 
-        button_delete = tk.Button(self.delete_film_frame, text="Xóa", command=self.delete_film)
-        button_delete.pack(padx=10, pady=5)
+        button_delete = tk.Button(self.delete_film_frame, text="Xóa",font=('Arial', 12),bg='salmon', command=self.delete_film)
+        button_delete.grid(row=len(self.labels) + 3, columnspan=2, padx=10, pady=5)
 
+    def load_movies(self):
+        # Kết nối tới cơ sở dữ liệu MySQL
+        cnx = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="dinhan24092002",
+            database="finalproject"
+        )
+        cursor = cnx.cursor()
+
+        # Truy vấn dữ liệu từ bảng dulieuphim trong MySQL
+        query = "SELECT * FROM dulieuphim"
+        cursor.execute(query)
+
+        # Lấy tất cả các dòng kết quả từ truy vấn
+        rows = cursor.fetchall()
+
+        # Hiển thị dữ liệu trên bảng dữ liệu phim
+        for row in rows:
+            self.movie_table.insert('', 'end', values=row)
+
+        # Đóng kết nối và cursor
+        cursor.close()
+        cnx.close()
+    def search_movies(self):
+        # Xóa nội dung hiện tại của bảng dữ liệu phim
+        self.movie_table.delete(*self.movie_table.get_children())
+        # Lấy từ khóa tìm kiếm từ entry
+        search_query = self.search_entry.get()
+        # Kết nối tới cơ sở dữ liệu MySQL
+        cnx = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="dinhan24092002",
+            database="finalproject"
+        )
+        cursor = cnx.cursor()
+        # Truy vấn dữ liệu phim từ MySQL dựa trên từ khóa tìm kiếm
+        query = "SELECT * FROM dulieuphim WHERE MovieTitle LIKE %s OR STT LIKE %s"
+        cursor.execute(query, ('%' + search_query + '%', '%' + search_query + '%'))
+        # Lấy tất cả các dòng kết quả từ truy vấn
+        rows = cursor.fetchall()
+        # Hiển thị dữ liệu trên bảng dữ liệu phim   
+        for row in rows:
+            self.movie_table.insert('', 'end', values=row)
+        # Đóng kết nối và cursor
+        cursor.close()
+        cnx.close()
     def save_film(self):
         # Kiểm tra xem các entry đã được điền đầy đủ hay chưa
         if any(not entry.get() for entry in self.entries):
-            self.label_message.config(text="Vui lòng nhập đủ thông tin")
+            self.label_message.config(font=('Arial', 12),text="Vui lòng nhập đủ thông tin")
         else:
             # Lấy thông tin từ các phần nhập liệu
             film_info = {}
@@ -647,12 +829,12 @@ class AddFilmFrame:
                 cnx.close()
 
                 # Sau khi lưu thành công, thông báo cho người dùng và xóa dữ liệu các entry
-                self.label_message.config(text="Lưu thành công")
+                self.label_message.config(font=('Arial', 12),text="Lưu thành công")
                 for entry in self.entries:
                     entry.delete(0, tk.END)
             except mysql.connector.Error as error:
                 print("Lỗi khi kết nối và lưu dữ liệu vào MySQL:", error)
-                self.label_message.config(text="Lưu thất bại")
+                self.label_message.config(font=('Arial', 12),text="Lưu thất bại")
     def delete_film(self):
         film_name_or_order = self.entry_delete.get()
 
@@ -689,7 +871,7 @@ class AddFilmFrame:
             self.entry_delete.delete(0, tk.END)
 
             # Hiển thị thông báo xóa thành công
-            self.label_message.config(text="Xóa thành công")
+            self.label_message.config(font=('Arial', 12),text="Xóa thành công")
         except mysql.connector.Error as error:
             print("Lỗi khi kết nối và xóa dữ liệu trong MySQL:", error)
 class PriceFrame:
@@ -707,7 +889,7 @@ class PriceFrame:
         left_frame.pack_propagate(False)    
 
         # Tạo ô tìm kiếm
-        search_button = tk.Button(left_frame, text="Tìm kiếm", command=self.search_movies)
+        search_button = tk.Button(left_frame, text="Tìm kiếm",font=('Arial', 12),bg='khaki', command=self.search_movies)
         search_button.pack()
 
         self.search_entry = tk.Entry(left_frame)
@@ -726,6 +908,12 @@ class PriceFrame:
         # Thêm các cột và dữ liệu vào bảng dữ liệu phim
         self.movie_table['columns'] = ('STT', 'ReleaseDate', 'MovieTitle', 'Price','Order_number','Revenue')
 
+        self.movie_table.column('STT', width=90)
+        self.movie_table.column('ReleaseDate', width=100)
+        self.movie_table.column('MovieTitle', width=100)
+        self.movie_table.column('Price', width=100)
+        self.movie_table.column('Order_number', width=100)
+        self.movie_table.column('Revenue', width=90)
         self.movie_table.heading('STT', text='STT')
         self.movie_table.heading('ReleaseDate', text='ReleaseDate')
         self.movie_table.heading('MovieTitle', text='MovieTitle')
@@ -759,33 +947,256 @@ class PriceFrame:
         # Giới hạn kích thước của left_frame
         right_frame.pack_propagate(False) 
         # Thêm nội dung mới vào frame bên phải
-        label = tk.Label(right_frame, text="Thông tin phim")
+        label = tk.Label(right_frame,font=('Arial', 12), text="Thông tin phim")
         label.pack()
 
         # Tạo các label để hiển thị thông tin phim
-        self.label_stt = tk.Label(right_frame, text="STT:",anchor="w")
+        self.label_stt = tk.Label(right_frame,font=('Arial', 10), text="STT:",anchor="w")
         self.label_stt.pack(anchor="w")
-        self.label_release_date = tk.Label(right_frame, text="Ngày phát hành:",anchor="w")
+        self.label_release_date = tk.Label(right_frame, font=('Arial', 10),text="Ngày phát hành:",anchor="w")
         self.label_release_date.pack(anchor="w")
-        self.label_movie_title = tk.Label(right_frame, text="Tên phim:",anchor="w")
+        self.label_movie_title = tk.Label(right_frame,font=('Arial', 10), text="Tên phim:",anchor="w")
         self.label_movie_title.pack(anchor="w")
-        self.label_price = tk.Label(right_frame, text="Đơn giá:",anchor="w")
+        self.label_price = tk.Label(right_frame,font=('Arial', 10), text="Đơn giá:",anchor="w")
         self.label_price.pack(anchor="w")
-        self.label_order_number = tk.Label(right_frame, text="Số lượng đặt:",anchor="w")
+        self.label_order_number = tk.Label(right_frame,font=('Arial', 10), text="Số lượng đặt:",anchor="w")
         self.label_order_number.pack(anchor="w")
-        self.label_revenue = tk.Label(right_frame, text="Doanh thu:",anchor="w")
+        self.label_revenue = tk.Label(right_frame,font=('Arial', 10), text="Doanh thu:",anchor="w")
         self.label_revenue.pack(anchor="w")
 
         # Tạo phần nhập liệu cho tên hoặc số thứ tự phim cần xóa trong frame Xóa phim
-        self.label_change = tk.Label(right_frame, text="Đơn giá mới:")
+        self.label_change = tk.Label(right_frame,font=('Arial', 12), text="Đơn giá mới:")
         self.label_change.pack(padx=10, pady=5)
 
         self.entry_change = tk.Entry(right_frame)
         self.entry_change.pack(padx=10, pady=5)
 
-        button_change = tk.Button(right_frame, text="Thay đổi", command=self.change_price)
+        button_change = tk.Button(right_frame, font=('Arial', 12),text="Thay đổi",bg='silver', command=self.change_price)
         button_change.pack(padx=10, pady=5)
+        self.error_label = tk.Label(right_frame, text="")
+        self.error_label.pack()
+    def load_movies(self):
+        # Kết nối tới cơ sở dữ liệu MySQL
+        cnx = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="dinhan24092002",
+            database="finalproject"
+        )
+        cursor = cnx.cursor()
 
+        # Truy vấn dữ liệu từ bảng dulieuphim trong MySQL
+        query = "SELECT * FROM dulieuphim"
+        cursor.execute(query)
+
+        # Lấy tất cả các dòng kết quả từ truy vấn
+        rows = cursor.fetchall()
+
+        # Hiển thị dữ liệu trên bảng dữ liệu phim
+        for row in rows:
+            self.movie_table.insert('', 'end', values=row)
+
+        # Đóng kết nối và cursor
+        cursor.close()
+        cnx.close()
+    def search_movies(self):
+        try:
+            # Xóa nội dung hiện tại của bảng dữ liệu phim
+            self.movie_table.delete(*self.movie_table.get_children())
+            # Lấy từ khóa tìm kiếm từ entry
+            search_query = self.search_entry.get()
+            # Kết nối tới cơ sở dữ liệu MySQL
+            cnx = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="dinhan24092002",
+                database="finalproject"
+            )
+            cursor = cnx.cursor()
+            # Truy vấn dữ liệu phim từ MySQL dựa trên từ khóa tìm kiếm
+            query = "SELECT * FROM dulieuphim WHERE MovieTitle LIKE %s OR STT LIKE %s"
+            cursor.execute(query, ('%' + search_query + '%', '%' + search_query + '%'))
+            # Lấy tất cả các dòng kết quả từ truy vấn
+            rows = cursor.fetchall()
+            # Hiển thị dữ liệu trên bảng dữ liệu phim   
+            for row in rows:
+                self.movie_table.insert('', 'end', values=row)
+            # Đóng kết nối và cursor
+            cursor.close()
+            cnx.close()
+            # Gắn sự kiện chọn dòng trong bảng dữ liệu phim
+            self.movie_table.bind("<<TreeviewSelect>>", self.update_movie_info)
+        except:
+            return
+    def update_movie_info(self, event):
+        # Xóa nội dung hiện tại của phần frame "Thông tin phim"
+        self.clear_movie_info()
+
+        # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
+        selected_item = self.movie_table.focus()
+        movie_info = self.movie_table.item(selected_item, 'values')
+
+        # Hiển thị thông tin phim trong frame "Thông tin phim"
+        self.label_stt.config(text="STT: " + str(movie_info[0]))
+        self.label_release_date.config(text="Ngày phát hành: " + str(movie_info[1]))
+        self.label_movie_title.config(text="Tên phim: " + str(movie_info[2]))
+        self.label_price.config(text="Đơn giá: " + str(movie_info[3]))
+        self.label_order_number.config(text="Số lượng đặt: " + str(movie_info[4]))
+        self.label_revenue.config(text="Doanh thu: " + str(movie_info[5]))
+
+    def clear_movie_info(self):
+        # Xóa nội dung của các label trong phần frame "Thông tin phim"
+        self.label_stt.config(font=('Arial', 10),text="STT:")
+        self.label_release_date.config(font=('Arial', 10),text="Ngày phát hành:")
+        self.label_movie_title.config(font=('Arial', 10),text="Tên phim:")
+        self.label_price.config(font=('Arial', 10),text="Đơn giá:")
+        self.label_order_number.config(font=('Arial', 10),text="Số lượng đặt:")
+        self.label_revenue.config(font=('Arial', 10),text="Doanh thu:")
+    def change_price(self):
+        try:
+            # Lấy giá trị mới từ entry
+            new_price = self.entry_change.get()
+
+            # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
+            selected_item = self.movie_table.focus()
+            movie_info = self.movie_table.item(selected_item, 'values')
+
+            # Lấy giá trị hiện tại của cột Price
+            current_price = movie_info[3]
+
+            if not  new_price :
+                # Chưa nhập đủ thông tin
+                self.error_label.config(text="Lỗi: Vui lòng nhập đủ thông tin.",font=('Arial', 12),fg="red")
+                return
+            # Kiểm tra nếu giá trị mới khác giá trị hiện tại
+            if new_price != current_price:
+                # Lấy STT của phim
+                stt = movie_info[0]
+
+                # Kết nối tới cơ sở dữ liệu MySQL
+                cnx = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="dinhan24092002",
+                    database="finalproject"
+                )
+                cursor = cnx.cursor()
+
+                # Cập nhật giá trị mới vào cơ sở dữ liệu
+                update_query = "UPDATE dulieuphim SET Price = %s WHERE STT = %s"
+                cursor.execute(update_query, (new_price, stt))
+                cnx.commit()
+                self.error_label.config(text="Thay đổi thành công",font=('Arial', 12),fg="red")
+                # Đóng kết nối và cursor
+                cursor.close()
+                cnx.close()
+
+                # Cập nhật lại thông tin phim sau khi thay đổi giá
+                self.update_movie_info(None)
+        except:
+            # Xóa dữ liệu nhập trong entry
+            self.entry_change.delete(0, tk.END)
+
+            # Hiển thị thông báo xóa thành công
+            self.error_label.config(text="Lỗi: Vui lòng nhập đủ thông tin.",font=('Arial', 12),fg="red")
+class TicketFrame:
+    def __init__(self, parent):
+        self.parent = parent
+        # Tạo frame chứa nội dung Đơn hàng
+        self.price_film_frame = tk.Frame(self.parent.content_frame)
+        self.price_film_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Tạo frame con bên trái để hiển thị bảng dữ liệu phim và thanh cuộn
+        left_frame = tk.Frame(self.price_film_frame,width=400, height=800)
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Giới hạn kích thước của left_frame
+        left_frame.pack_propagate(False)    
+
+        # Tạo ô tìm kiếm
+        search_button = tk.Button(left_frame, text="Tìm kiếm",font=('Arial', 12),bg='khaki', command=self.search_movies)
+        search_button.pack()
+
+        self.search_entry = tk.Entry(left_frame)
+        self.search_entry.pack()
+
+        # Tạo thanh cuộn
+        scrollbar = tk.Scrollbar(left_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Tạo thanh cuộn ngang
+        xscrollbar = tk.Scrollbar(left_frame, orient=tk.HORIZONTAL)
+        xscrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # Tạo bảng dữ liệu phim
+        self.movie_table = ttk.Treeview(left_frame, yscrollcommand=scrollbar.set)
+        # Thêm các cột và dữ liệu vào bảng dữ liệu phim
+        self.movie_table['columns'] = ('STT', 'ReleaseDate', 'MovieTitle', 'Price','Order_number','Revenue')
+
+        self.movie_table.column('STT', width=90)
+        self.movie_table.column('ReleaseDate', width=100)
+        self.movie_table.column('MovieTitle', width=100)
+        self.movie_table.column('Price', width=100)
+        self.movie_table.column('Order_number', width=100)
+        self.movie_table.column('Revenue', width=90)
+        self.movie_table.heading('STT', text='STT')
+        self.movie_table.heading('ReleaseDate', text='ReleaseDate')
+        self.movie_table.heading('MovieTitle', text='MovieTitle')
+        self.movie_table.heading('Price', text='Price')
+        self.movie_table.heading('Order_number', text='Order_number')
+        self.movie_table.heading('Revenue', text='Revenue')
+
+        # Tìm index của cột "MovieTitle"
+        column_index = self.movie_table['columns'].index('MovieTitle')
+        # Tính toán vị trí cuộn ngang của thanh cuộn
+        scroll_position = column_index / len(self.movie_table['columns'])
+
+        # Di chuyển thanh cuộn ngang đến vị trí mong muốn
+        self.movie_table.xview_moveto(scroll_position)
+
+        # Kết nối thanh cuộn với bảng dữ liệu phim
+        scrollbar.config(command=self.movie_table.yview)
+        # Kết nối thanh cuộn ngang với bảng dữ liệu phim
+        self.movie_table.configure(xscrollcommand=xscrollbar.set)
+        xscrollbar.config(command=self.movie_table.xview)
+
+        # Hiển thị bảng dữ liệu phim
+        self.movie_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Gọi hàm để hiển thị dữ liệu phim từ MySQL
+        self.load_movies()
+
+        # Tạo frame con bên phải để hiển thị thông tin phim và các tùy chọn khác
+        right_frame = tk.Frame(self.price_film_frame)
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        # Giới hạn kích thước của left_frame
+        right_frame.pack_propagate(False) 
+        # Thêm nội dung mới vào frame bên phải
+        label = tk.Label(right_frame,font=('Arial', 12), text="Thông tin phim")
+        label.pack()
+
+        # Tạo các label để hiển thị thông tin phim
+        self.label_stt = tk.Label(right_frame,font=('Arial', 10), text="STT:",anchor="w")
+        self.label_stt.pack(anchor="w")
+        self.label_release_date = tk.Label(right_frame,font=('Arial', 10), text="Ngày phát hành:",anchor="w")
+        self.label_release_date.pack(anchor="w")
+        self.label_movie_title = tk.Label(right_frame,font=('Arial', 10), text="Tên phim:",anchor="w")
+        self.label_movie_title.pack(anchor="w")
+        self.label_price = tk.Label(right_frame,font=('Arial', 10), text="Đơn giá:",anchor="w")
+        self.label_price.pack(anchor="w")
+        self.label_order_number = tk.Label(right_frame,font=('Arial', 10), text="Số lượng đặt:",anchor="w")
+        self.label_order_number.pack(anchor="w")
+        
+        # Tạo phần nhập liệu cho tên hoặc số thứ tự phim cần xóa trong frame Xóa phim
+        self.label_number = tk.Label(right_frame,font=('Arial', 12), text="Số Lượng vé:")
+        self.label_number.pack(padx=10, pady=5)
+
+        self.entry_number = tk.Entry(right_frame)
+        self.entry_number.pack(padx=3, pady=1)
+
+        button_plus = tk.Button(right_frame,font=('Arial', 12), text="Đặt",bg='silver', command=self.Order)
+        button_plus.pack(padx=10, pady=5)
+        self.error_label = tk.Label(right_frame, text="")
+        self.error_label.pack()
     def load_movies(self):
         # Kết nối tới cơ sở dữ liệu MySQL
         cnx = mysql.connector.connect(
@@ -840,62 +1251,203 @@ class PriceFrame:
         # Xóa nội dung hiện tại của phần frame "Thông tin phim"
         self.clear_movie_info()
 
+        self.number_ticket=self.entry_number.get()
+        
         # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
         selected_item = self.movie_table.focus()
         movie_info = self.movie_table.item(selected_item, 'values')
 
+        
         # Hiển thị thông tin phim trong frame "Thông tin phim"
         self.label_stt.config(text="STT: " + str(movie_info[0]))
         self.label_release_date.config(text="Ngày phát hành: " + str(movie_info[1]))
         self.label_movie_title.config(text="Tên phim: " + str(movie_info[2]))
         self.label_price.config(text="Đơn giá: " + str(movie_info[3]))
-        self.label_order_number.config(text="Số lượng đặt: " + str(movie_info[4]))
-        self.label_revenue.config(text="Doanh thu: " + str(movie_info[5]))
+        self.label_order_number.config(text="Số lượng đặt: " + self.number_ticket)
+        self.Tong_gia=int(movie_info[3])*int(self.number_ticket)
+
+    def Order(self):
+        dong1="-------------MOVIE TICKET-------------"
+        dong2="DATE:                          9/6/2022"
+        dong3="CASHIER:                 Hoàng Đình An"
+        dong4="-------------FILM DETAILS-------------"
+        dong8="--------------------------------------"
+        dong9="TỔNG GIÁ: "+ str(self.Tong_gia)
+        noi_dung = dong1+'\n'+dong2+'\n'+dong3+'\n'+dong4+'\n'+self.label_movie_title.cget("text") + '\n' + self.label_price.cget("text") + '\n' + self.label_order_number.cget("text")+'\n'+dong8+'\n'+dong9
+        with open("E:\APEN FINAL\\BILL.txt", "w", encoding="utf-8") as file:
+            file.write(noi_dung)
+    def clear_movie_info(self):
+        # Xóa nội dung của các label trong phần frame "Thông tin phim"
+        self.label_stt.config(font=('Arial', 10),text="STT:")
+        self.label_release_date.config(font=('Arial', 10),text="Ngày phát hành:")
+        self.label_movie_title.config(font=('Arial', 10),text="Tên phim:")
+        self.label_price.config(font=('Arial', 10),text="Đơn giá:")
+        self.label_order_number.config(font=('Arial', 10),text="Số lượng đặt:")
+class PersonsFrame:
+    def __init__(self, parent):
+        self.parent = parent
+
+        # Tạo frame chứa nội dung Nhân viên
+        self.person_frame = tk.Frame(self.parent.content_frame)
+        self.person_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Tạo frame con bên trái để hiển thị bảng dữ liệu nhân viên và thanh cuộn
+        left_frame = tk.Frame(self.person_frame,width=400, height=600)
+        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Giới hạn kích thước của left_frame
+        left_frame.pack_propagate(False)    
+
+        # Tạo ô tìm kiếm
+        search_button = tk.Button(left_frame, font=('Arial', 12),text="Tìm kiếm",bg='khaki', command=self.search_movies)
+        search_button.pack()
+
+        self.search_entry = tk.Entry(left_frame)
+        self.search_entry.pack()
+
+        # Tạo thanh cuộn
+        scrollbar = tk.Scrollbar(left_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Tạo thanh cuộn ngang
+        xscrollbar = tk.Scrollbar(left_frame, orient=tk.HORIZONTAL)
+        xscrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # Tạo bảng dữ liệu phim
+        self.movie_table = ttk.Treeview(left_frame, yscrollcommand=scrollbar.set)
+        # Thêm các cột và dữ liệu vào bảng dữ liệu phim
+        self.movie_table['columns'] = ('ID', 'Name', 'phone_number', 'Gmail','Address')
+
+        self.movie_table.column('ID', width=90)
+        self.movie_table.column('Name', width=100)
+        self.movie_table.column('phone_number', width=100)
+        self.movie_table.column('Gmail', width=100)
+        self.movie_table.column('Address', width=100)
+        self.movie_table.heading('ID', text='ID')
+        self.movie_table.heading('Name', text='Name')
+        self.movie_table.heading('phone_number', text='phone_number')
+        self.movie_table.heading('Gmail', text='GMAIL')
+        self.movie_table.heading('Address', text='Address')
+
+        # Tìm index của cột "username"
+        column_index = self.movie_table['columns'].index('Name')
+        # Tính toán vị trí cuộn ngang của thanh cuộn
+        scroll_position = column_index / len(self.movie_table['columns'])
+
+        # Di chuyển thanh cuộn ngang đến vị trí mong muốn
+        self.movie_table.xview_moveto(scroll_position)
+
+        # Kết nối thanh cuộn với bảng dữ liệu phim
+        scrollbar.config(command=self.movie_table.yview)
+        # Kết nối thanh cuộn ngang với bảng dữ liệu phim
+        self.movie_table.configure(xscrollcommand=xscrollbar.set)
+        xscrollbar.config(command=self.movie_table.xview)
+
+        # Hiển thị bảng dữ liệu phim
+        self.movie_table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Gọi hàm để hiển thị dữ liệu phim từ MySQL
+        self.load_movies()
+
+        # Tạo frame con bên phải để hiển thị thông tin phim và các tùy chọn khác
+        right_frame = tk.Frame(self.person_frame)
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        # Giới hạn kích thước của left_frame
+        right_frame.pack_propagate(False) 
+        # Thêm nội dung mới vào frame bên phải
+        label = tk.Label(right_frame,font=('Arial', 12), text="Thông tin cá nhân")
+        label.pack()
+
+        # Tạo các label để hiển thị thông tin phim
+        label1 = tk.Label(right_frame)
+        label1.pack()
+        label2 = tk.Label(right_frame)
+        label2.pack()
+        self.label_stt = tk.Label(right_frame, font=('Arial', 10),text="ID:",anchor="w")
+        self.label_stt.pack(anchor="w")
+        self.label_release_date = tk.Label(right_frame, font=('Arial', 10),text="Name:",anchor="w")
+        self.label_release_date.pack(anchor="w")
+        self.label_movie_title = tk.Label(right_frame, font=('Arial', 10),text="Phone:",anchor="w")
+        self.label_movie_title.pack(anchor="w")
+        self.label_price = tk.Label(right_frame, font=('Arial', 10),text="Gmail:",anchor="w")
+        self.label_price.pack(anchor="w")
+        self.label_order_number = tk.Label(right_frame,font=('Arial', 10), text="Adress:",anchor="w")
+        self.label_order_number.pack(anchor="w")
+    def load_movies(self):
+        # Kết nối tới cơ sở dữ liệu MySQL
+        cnx = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="dinhan24092002",
+            database="finalproject"
+        )
+        cursor = cnx.cursor()
+
+        # Truy vấn dữ liệu từ bảng dulieuphim trong MySQL
+        query = "SELECT * FROM persons"
+        cursor.execute(query)
+
+        # Lấy tất cả các dòng kết quả từ truy vấn
+        rows = cursor.fetchall()
+
+        # Hiển thị dữ liệu trên bảng dữ liệu phim
+        for row in rows:
+            self.movie_table.insert('', 'end', values=row)
+
+        # Đóng kết nối và cursor
+        cursor.close()
+        cnx.close()
+    def search_movies(self):
+        # Xóa nội dung hiện tại của bảng dữ liệu phim
+        self.movie_table.delete(*self.movie_table.get_children())
+        # Lấy từ khóa tìm kiếm từ entry
+        search_query = self.search_entry.get()
+        # Kết nối tới cơ sở dữ liệu MySQL
+        cnx = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="dinhan24092002",
+            database="finalproject"
+        )
+        cursor = cnx.cursor()
+        # Truy vấn dữ liệu phim từ MySQL dựa trên từ khóa tìm kiếm
+        query = "SELECT * FROM persons WHERE username LIKE %s OR ID LIKE %s"
+        cursor.execute(query, ('%' + search_query + '%', '%' + search_query + '%'))
+        # Lấy tất cả các dòng kết quả từ truy vấn
+        rows = cursor.fetchall()
+        # Hiển thị dữ liệu trên bảng dữ liệu phim   
+        for row in rows:
+            self.movie_table.insert('', 'end', values=row)
+        # Đóng kết nối và cursor
+        cursor.close()
+        cnx.close()
+        # Gắn sự kiện chọn dòng trong bảng dữ liệu phim
+        self.movie_table.bind("<<TreeviewSelect>>", self.update_movie_info)
+    def update_movie_info(self, event):
+        try:
+            # Xóa nội dung hiện tại của phần frame "Thông tin phim"
+            self.clear_movie_info()
+
+            # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
+            selected_item = self.movie_table.focus()
+            movie_info = self.movie_table.item(selected_item, 'values')
+
+            # Hiển thị hình ảnh và các label thông tin trong frame "Thông tin phim"
+            self.label_stt.config(text="ID " + str(movie_info[0]))
+            self.label_release_date.config(text="Name: " + str(movie_info[1]))
+            self.label_movie_title.config(text="Phone: " + str(movie_info[2]))
+            self.label_price.config(text="Gmail: " + str(movie_info[3]))
+            self.label_order_number.config(text="Adress: " + str(movie_info[4]))
+        except:
+            return
+        
 
     def clear_movie_info(self):
         # Xóa nội dung của các label trong phần frame "Thông tin phim"
-        self.label_stt.config(text="STT:")
-        self.label_release_date.config(text="Ngày phát hành:")
-        self.label_movie_title.config(text="Tên phim:")
-        self.label_price.config(text="Đơn giá:")
-        self.label_order_number.config(text="Số lượng đặt:")
-        self.label_revenue.config(text="Doanh thu:")
-    def change_price(self):
-        # Lấy giá trị mới từ entry
-        new_price = self.entry_change.get()
-
-        # Lấy thông tin phim từ dòng được chọn trong bảng dữ liệu phim
-        selected_item = self.movie_table.focus()
-        movie_info = self.movie_table.item(selected_item, 'values')
-
-        # Lấy giá trị hiện tại của cột Price
-        current_price = movie_info[3]
-
-        # Kiểm tra nếu giá trị mới khác giá trị hiện tại
-        if new_price != current_price:
-            # Lấy STT của phim
-            stt = movie_info[0]
-
-            # Kết nối tới cơ sở dữ liệu MySQL
-            cnx = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="dinhan24092002",
-                database="finalproject"
-            )
-            cursor = cnx.cursor()
-
-            # Cập nhật giá trị mới vào cơ sở dữ liệu
-            update_query = "UPDATE dulieuphim SET Price = %s WHERE STT = %s"
-            cursor.execute(update_query, (new_price, stt))
-            cnx.commit()
-
-            # Đóng kết nối và cursor
-            cursor.close()
-            cnx.close()
-
-            # Cập nhật lại thông tin phim sau khi thay đổi giá
-            self.update_movie_info(None)
+        self.label_stt.config(font=('Arial', 12),text="ID:")
+        self.label_release_date.config(font=('Arial', 12),text="Name:")
+        self.label_movie_title.config(font=('Arial', 12),text="Phone:")
+        self.label_price.config(font=('Arial', 12),text="Gmail:")
+        self.label_order_number.config(font=('Arial', 12),text="Adress:")
 class AccountFrame:
     def __init__(self, parent, username):
         self.parent = parent
@@ -908,37 +1460,47 @@ class AccountFrame:
         # Tạo frame chứa nội dung
         self.show_account_frame = tk.Frame(self.parent.content_frame)
         self.show_account_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.show_account_frame.pack_propagate(False)
 
         # Tạo frame chứa nội dung thay đổi mật khẩu
         self.change_password_frame = tk.Frame(self.parent.content_frame)
         self.change_password_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-
+        self.change_password_frame.pack_propagate(False)
         # Tạo các nhãn và ô nhập mật khẩu cũ
-        old_password_label = tk.Label(self.change_password_frame, text="Old Password:")
+        label1= tk.Label(self.change_password_frame)
+        label1.pack()
+        label2= tk.Label(self.change_password_frame)
+        label2.pack()
+        label3= tk.Label(self.change_password_frame)
+        label3.pack()
+        label4= tk.Label(self.change_password_frame,font=('Arial', 12), text="Thay đổi mật khẩu:")
+        label4.pack()
+        old_password_label = tk.Label(self.change_password_frame,font=('Arial', 12), text="Old Password:")
         old_password_label.pack()
 
         self.old_password_entry = tk.Entry(self.change_password_frame, show="*")
         self.old_password_entry.pack()
 
         # Tạo các nhãn và ô nhập mật khẩu mới
-        new_password_label = tk.Label(self.change_password_frame, text="New Password:")
+        new_password_label = tk.Label(self.change_password_frame,font=('Arial', 12), text="New Password:")
         new_password_label.pack()
 
         self.new_password_entry = tk.Entry(self.change_password_frame, show="*")
         self.new_password_entry.pack()
 
         # Tạo các nhãn và ô nhập lại mật khẩu mới
-        confirm_password_label = tk.Label(self.change_password_frame, text="Confirm Password:")
+        confirm_password_label = tk.Label(self.change_password_frame,font=('Arial', 12), text="Confirm Password:")
         confirm_password_label.pack()
 
         self.confirm_password_entry = tk.Entry(self.change_password_frame, show="*")
         self.confirm_password_entry.pack()
 
-        button_change = tk.Button(self.change_password_frame, text="Thay đổi", command=self.change_password)
+        button_change = tk.Button(self.change_password_frame,font=('Arial', 12), text="Thay đổi",bg='silver', command=self.change_password)
         button_change.pack(padx=10, pady=5)
-        self.checkbutton_show_password = tk.Checkbutton(self.change_password_frame, text="Hiển thị mật khẩu",variable=self.show_password,command=self.toggle_password_visibility)
+        self.checkbutton_show_password = tk.Checkbutton(self.change_password_frame,font=('Arial', 12), text="Hiển thị mật khẩu",variable=self.show_password,command=self.toggle_password_visibility)
         self.checkbutton_show_password.pack()
-
+        self.error_label = tk.Label(self.change_password_frame, text="",fg="red")
+        self.error_label.pack()
         # Kết nối tới cơ sở dữ liệu MySQL
         cnx = mysql.connector.connect(
             host="localhost",
@@ -957,14 +1519,130 @@ class AccountFrame:
         row = cursor.fetchone()
 
         if row is not None:
-            username_label = tk.Label(self.show_account_frame, text="Username: " + str(row[0]))
+            username_label = tk.Label(self.show_account_frame,font=('Arial', 12), text="Username: " + str(row[0]))
             username_label.pack()
 
-            id_label = tk.Label(self.show_account_frame, text="ID: " + str(row[1]))
+            id_label = tk.Label(self.show_account_frame,font=('Arial', 12), text="ID: " + str(row[1]))
             id_label.pack()
 
         cursor.close()
         cnx.close()
+        label1= tk.Label(self.show_account_frame)
+        label1.pack()
+        label2= tk.Label(self.show_account_frame,font=('Arial', 12), text="Thêm thông tin nhân viên:")
+        label2.pack()
+        name_label = tk.Label(self.show_account_frame,font=('Arial', 12), text="NAME:")
+        name_label.pack()
+        self.name_entry = tk.Entry(self.show_account_frame, width=50)
+        self.name_entry.pack()
+
+        phone_label = tk.Label(self.show_account_frame,font=('Arial', 12), text="PHONE NUMBER:")
+        phone_label.pack()
+        self.phone_entry = tk.Entry(self.show_account_frame, width=50)
+        self.phone_entry.pack()
+
+        gmail_label = tk.Label(self.show_account_frame,font=('Arial', 12), text="GMAIL:")
+        gmail_label.pack()
+        self.gmail_entry = tk.Entry(self.show_account_frame, width=50)
+        self.gmail_entry.pack()
+
+        address_label = tk.Label(self.show_account_frame,font=('Arial', 12), text="ADRESS:")
+        address_label.pack()
+        self.address_entry = tk.Entry(self.show_account_frame, width=50)
+        self.address_entry.pack()
+
+        button_change = tk.Button(self.show_account_frame,font=('Arial', 12), text="Cập nhật",bg='silver', command=self.update_infor)
+        button_change.pack(padx=10, pady=5)
+
+        # Thêm label để hiển thị thông báo
+        self.label_message = tk.Label(self.show_account_frame, text="", fg="red")
+        self.label_message.pack(padx=10, pady=5)
+
+        # Tạo phần nhập liệu cho tên hoặc số thứ tự phim cần xóa trong frame Xóa phim
+        label_delete = tk.Label(self.show_account_frame, font=('Arial', 12),text="Nhập tên hoặc số thứ tự Nhân viên cần xóa:")
+        label_delete.pack(padx=10, pady=5)
+
+        self.entry_delete = tk.Entry(self.show_account_frame, width=50)
+        self.entry_delete.pack(padx=10, pady=5)
+
+        button_delete = tk.Button(self.show_account_frame, text="Xóa",font=('Arial', 12),bg='salmon', command=self.delete_person)
+        button_delete.pack(padx=10, pady=5)
+    def delete_person(self):
+        film_name_or_order = self.entry_delete.get()
+
+        try:
+            # Kết nối tới cơ sở dữ liệu MySQL
+            cnx = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="dinhan24092002",
+                database="finalproject"
+            )
+
+            # Tạo đối tượng cursor để thực hiện các truy vấn
+            cursor = cnx.cursor()
+
+            # Kiểm tra xem film_name_or_order có phải là số hay không
+            if film_name_or_order.isdigit():
+                # Xóa phim dựa trên STT
+                delete_query = "DELETE FROM persons WHERE ID = %s"
+                cursor.execute(delete_query, (film_name_or_order,))
+            else:
+                # Xóa phim dựa trên tên phim
+                delete_query = "DELETE FROM persons WHERE username = %s"
+                cursor.execute(delete_query, (film_name_or_order,))
+
+            # Lưu các thay đổi vào cơ sở dữ liệu
+            cnx.commit()
+
+            # Đóng kết nối và cursor
+            cursor.close()
+            cnx.close()
+
+            # Xóa dữ liệu nhập trong entry
+            self.entry_delete.delete(0, tk.END)
+
+            # Hiển thị thông báo xóa thành công
+            self.label_message.config(font=('Arial', 12),text="Xóa thành công")
+        except mysql.connector.Error as error:
+            print("Lỗi khi kết nối và xóa dữ liệu trong MySQL:", error)
+    def update_infor(self):
+        try:
+            # Lấy thông tin nhập từ các trường Entry
+            name = self.name_entry.get()
+            phone=self.phone_entry.get()
+            gmail = self.gmail_entry.get()
+            address = self.address_entry.get()
+
+            # Kết nối đến cơ sở dữ liệu MySQL
+            mydb = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="dinhan24092002",
+                database="finalproject"
+            )
+
+            # Tạo đối tượng Cursor
+            cursor = mydb.cursor()
+
+            # Thêm thông tin vào bảng persons
+            query = "INSERT INTO persons (username,phone_number,GMAIL,Address) VALUES (%s, %s, %s, %s)"
+            values = (name,phone, gmail, address)
+            cursor.execute(query, values)
+
+            # Xác nhận thay đổi trong cơ sở dữ liệu
+            mydb.commit()
+            self.label_message.config(font=('Arial', 12),text="Cập nhật thành công")
+            self.name_entry.delete(0, tk.END)
+            self.phone_entry.delete(0, tk.END)
+            self.gmail_entry.delete(0, tk.END)
+            self.address_entry.delete(0, tk.END)
+            # Đóng kết nối
+            cursor.close()
+            mydb.close()
+        except:
+            self.label_message.config(font=('Arial', 12),text="Vui lòng nhập thông tin")
+            
     def change_password(self):
         # Kết nối tới cơ sở dữ liệu MySQL
         cnx = mysql.connector.connect(
@@ -995,22 +1673,19 @@ class AccountFrame:
         # Kiểm tra xem người dùng đã nhập đủ thông tin hay chưa
         if not old_password or not new_password or not confirm_password:
             # Chưa nhập đủ thông tin
-            error_label = tk.Label(self.change_password_frame, text="Lỗi: Vui lòng nhập đủ thông tin.")
-            error_label.pack()
+            self.error_label.config(font=('Arial', 12), text="Lỗi: Vui lòng nhập đủ thông tin.",fg="red")
             return
 
         # Kiểm tra xem mật khẩu cũ có trùng khớp hay không
         if old_password != current_password:
             # Mật khẩu cũ không trùng khớp
-            error_label = tk.Label(self.change_password_frame, text="Lỗi: Mật khẩu cũ không chính xác.")
-            error_label.pack()
+            self.error_label.config(font=('Arial', 12), text="Lỗi: Mật khẩu cũ không chính xác.",fg="red")
             return
 
         # Kiểm tra xem mật khẩu mới và xác nhận mật khẩu có trùng khớp hay không
         if new_password != confirm_password:
             # Mật khẩu mới và mật khẩu xác nhận không trùng khớp
-            error_label = tk.Label(self.change_password_frame, text="Lỗi: Mật khẩu xác nhận không khớp.")
-            error_label.pack()
+            self.error_label.config( font=('Arial', 12),text="Lỗi: Mật khẩu xác nhận không khớp.",fg="red")
             return
 
         # Kết nối lại tới cơ sở dữ liệu MySQL
@@ -1033,8 +1708,7 @@ class AccountFrame:
         cnx.close()
 
         # Mật khẩu cũ trùng khớp và mật khẩu mới trùng khớp
-        success_label = tk.Label(self.change_password_frame, text="Thay đổi mật khẩu thành công.")
-        success_label.pack()
+        self.error_label.config( font=('Arial', 12),text="Thay đổi mật khẩu thành công.")
 
         # Xóa nội dung trong các trường nhập mật khẩu
         self.old_password_entry.delete(0, tk.END)
